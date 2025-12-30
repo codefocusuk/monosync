@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master, develop]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [18, 20, 22]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint (TypeScript check)
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+        continue-on-error: true  # Don't fail if no tests yet
+
+      - name: Test sync-packages CLI
+        run: node dist/bin/sync-packages.js --help
+
+      - name: Test sync-versions CLI
+        run: node dist/bin/sync-versions.js --help
+
+      - name: Upload build artifacts
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == 20
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-build
+          path: dist/
+          retention-days: 7
+
+  package:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Create package tarball
+        run: npm pack
+
+      - name: Get package version
+        id: package-version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Upload package tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: codefocus-monosync-v${{ steps.package-version.outputs.version }}
+          path: "*.tgz"
+          retention-days: 30
+
+      - name: Upload package contents
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-contents-v${{ steps.package-version.outputs.version }}
+          path: |
+            dist/
+            package.json
+            README.md
+            LICENSE
+            CHANGELOG.md
+          retention-days: 30

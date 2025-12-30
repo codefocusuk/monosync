@@ -1,0 +1,66 @@
+{
+  "name": "@codefocus/monosync",
+  "version": "0.1.0",
+  "description": "Synchronize package.json files across monorepo workspaces with template-based configuration and version management",
+  "type": "module",
+  "main": "dist/lib/index.js",
+  "types": "dist/lib/index.d.ts",
+  "bin": {
+    "monosync": "./dist/bin/sync-packages.js",
+    "sync-packages": "./dist/bin/sync-packages.js",
+    "sync-versions": "./dist/bin/sync-versions.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "build:tsc": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build",
+    "publish:npm": "npm publish --access public",
+    "publish:dry": "npm publish --dry-run",
+    "test": "vitest --run --reporter=verbose",
+    "lint": "tsc --noEmit",
+    "prepack": "npm run build:tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
+  },
+  "keywords": [
+    "monorepo",
+    "package-sync",
+    "version-sync",
+    "workspace",
+    "package.json",
+    "synchronization",
+    "template",
+    "pnpm",
+    "npm",
+    "yarn",
+    "cli",
+    "developer-tools",
+    "build-tools"
+  ],
+  "author": {
+    "name": "CodeFocus",
+    "url": "https://codefocus.co.uk"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "homepage": "https://github.com/codefocusuk/monosync#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codefocusuk/monosync.git"
+  },
+  "bugs": {
+    "url": "https://github.com/codefocusuk/monosync/issues"
+  }
+}

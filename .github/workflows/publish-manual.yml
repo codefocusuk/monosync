@@ -1,0 +1,60 @@
+name: Manual Publish to npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish'
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for npm provenance
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+        continue-on-error: true  # Don't fail if no tests yet
+
+      - name: Create package tarball
+        run: npm pack
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package-v${{ inputs.version }}
+          path: |
+            dist/
+            *.tgz
+          retention-days: 30
+
+      - name: Publish to npm
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Upload published package info
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-info-v${{ inputs.version }}
+          path: package.json
+          retention-days: 90
