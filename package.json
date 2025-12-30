@@ -1,7 +1,7 @@
 {
   "name": "@codefocus/monosync",
-  "version": "0.1.0",
-  "description": "Synchronize package.json files across monorepo workspaces with template-based configuration and version management",
+  "version": "0.2.0",
+  "description": "Keep your monorepo package.json files consistent with automatic field ordering and version synchronization",
   "type": "module",
   "main": "dist/lib/index.js",
   "types": "dist/lib/index.d.ts",

@@ -17,16 +17,12 @@ export type {
 // Export sync-packages functionality
 export {
   syncPackages,
-  validatePackageStructure,
-  getRootVersion,
   loadTemplate,
-  loadConfigs,
   loadMonosyncConfig,
-  resolveTemplatePath,
-  resolveConfigsPath,
-  generatePackageJson,
+  reorderPackageJson,
   writePackageJson,
-  deepMerge,
+  discoverPackages,
+  findPackageJsonFiles,
 } from './sync-packages.js';
 
 // Export sync-versions functionality

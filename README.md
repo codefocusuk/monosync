@@ -5,28 +5,26 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D14.0.0-green.svg)](https://nodejs.org/)
 
-**Synchronize package.json files across monorepo workspaces with template-based configuration and version management**
+**Keep your monorepo package.json files consistent with automatic field ordering and version synchronization**
 
-Keep your monorepo packages consistent and up-to-date with automated synchronization of package.json fields and versions.
+Simple, lightweight tools for maintaining consistency across monorepo packages.
 
 ---
 
 ## Why this exists
 
-Managing multiple packages in a monorepo is challenging:
+Managing multiple packages in a monorepo leads to inconsistency:
 
-- **Inconsistent metadata** — Different packages have different authors, licenses, or repository URLs
-- **Version drift** — Keeping package versions synchronized with the root version
-- **Manual updates** — Updating common fields across all packages is tedious and error-prone
-- **Configuration sprawl** — Each package needs similar but slightly different configurations
+- **Inconsistent field ordering** — Different packages have fields in different orders
+- **Version drift** — Keeping package versions synchronized manually is tedious
+- **Manual maintenance** — Updating common fields across packages is error-prone
 
-`@codefocus/monosync` solves these problems with:
+`@codefocus/monosync` solves these problems by:
 
-- **Template-based synchronization** — Define common fields once, apply everywhere
-- **Per-package customization** — Override or extend template fields for specific packages
-- **Automatic version sync** — Keep all package versions aligned with a single command
-- **Flexible configuration** — Multiple ways to configure (CLI flags, config file, or standard locations)
-- **Deep merge support** — Intelligently merge nested objects and arrays
+- **Auto-discovering packages** — No configuration needed, works with pnpm/yarn/npm workspaces
+- **Preserving all values** — Never overwrites your package.json content
+- **Reordering fields** — Maintains consistent field order across all packages
+- **Syncing versions** — One command to align all package versions
 - **Zero dependencies** — Lightweight and fast
 - **TypeScript + CLI** — Use as a library or command-line tool
 
@@ -49,8 +47,7 @@ Add scripts to your root `package.json`:
 ```json
 {
   "scripts": {
-    "sync:packages": "sync-packages",
-    "sync:versions": "sync-versions"
+    "sync": "sync-packages && sync-versions"
   }
 }
 ```
@@ -59,138 +56,56 @@ Add scripts to your root `package.json`:
 
 ## Quick Start
 
-### 1. Create configuration files
-
-Create a `.monosync` directory in your project root:
+That's it! Just run:
 
 ```bash
-mkdir .monosync
+npm run sync
 ```
 
-Create `.monosync/package-template.json` with common fields:
+This will:
+1. Auto-discover all packages in your monorepo
+2. Reorder package.json fields to a consistent order
+3. Synchronize all package versions with the root version
 
-```json
-{
-  "license": "MIT",
-  "author": {
-    "name": "Your Name",
-    "url": "https://yoursite.com"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourorg/yourrepo.git"
-  },
-  "engines": {
-    "node": ">=14.0.0"
-  }
-}
-```
-
-Create `.monosync/package-configs.json` with per-package configurations:
-
-```json
-{
-  "packages": {
-    "@yourscope/package-a": {
-      "directory": "packages/package-a",
-      "description": "Package A description",
-      "main": "./dist/index.js",
-      "module": "./dist/index.mjs",
-      "types": "./dist/index.d.ts"
-    }
-  }
-}
-```
-
-### 2. Synchronize package.json files
-
-```bash
-npm run sync:packages
-```
-
-### 3. Synchronize all package versions
-
-```bash
-npm run sync:versions
-```
+**No configuration files needed.**
 
 ---
 
-## Configuration
-
-`monosync` provides three flexible ways to configure paths:
-
-### 1. Standard Locations (Recommended)
-
-Place your configuration files in one of these locations (checked in order):
-
-1. `.monosync/package-template.json` and `.monosync/package-configs.json` **(recommended)**
-2. `config/monosync/package-template.json` and `config/monosync/package-configs.json`
-3. `package-template.json` and `package-configs.json` (root directory)
-4. `scripts/build-system/` (legacy support)
-
-### 2. Configuration File
-
-Create `.monosyncrc.json` in your project root:
-
-```json
-{
-  "templatePath": "custom/path/template.json",
-  "configsPath": "custom/path/configs.json"
-}
-```
-
-### 3. CLI Flags
-
-Override paths via command-line flags:
-
-```bash
-# Specify config directory
-sync-packages --config-dir .monosync
-
-# Specify individual files
-sync-packages --template custom/template.json --configs custom/configs.json
-```
-
-### Priority Order
-
-Configuration is resolved in this order (highest priority first):
-
-1. CLI flags (`--template`, `--configs`, `--config-dir`)
-2. `.monosyncrc.json` file
-3. Standard locations
-
----
-
-## Features
+## What It Does
 
 ### sync-packages
 
-Synchronizes package.json files based on a template and per-package configurations.
+**Reorders package.json fields** to maintain consistency across your monorepo.
 
-**What it does:**
-- Loads a shared template with common fields (author, license, repository, etc.)
-- Merges per-package configurations (entry points, dependencies, scripts)
-- Generates complete package.json files with proper field ordering
-- Validates package structure before synchronization
-- Reports success/failure for each package
+- Auto-discovers packages from `pnpm-workspace.yaml` or scans standard directories (`packages/`, `apps/`, `libs/`)
+- Reads each package.json and **preserves all values**
+- Reorders fields to a standard order:
+  - `name`, `version`, `private`, `type`, `license`, `description`
+  - `main`, `module`, `types`
+  - `repository`, `homepage`, `bugs`, `author`, `contributors`
+  - `keywords`, `funding`, `engines`
+  - `exports`, `files`, `scripts`
+  - `dependencies`, `devDependencies`, `peerDependencies`, `peerDependenciesMeta`
+- Writes back with consistent formatting (2-space indentation, trailing newline)
 
-**Project Structure:**
+**Important:** This tool does NOT modify your values - it only reorders fields for consistency.
 
-```
-your-monorepo/
-├── package.json (root version)
-├── .monosync/
-│   ├── package-template.json
-│   └── package-configs.json
-└── packages/
-    ├── package-a/
-    │   └── package.json
-    └── package-b/
-        └── package.json
-```
+### sync-versions
 
-**Example `package-template.json`:**
+**Synchronizes package versions** across your monorepo.
+
+- Recursively finds all package.json files
+- Reads version from root package.json
+- Updates all child package versions
+- Reports which packages changed
+
+---
+
+## Optional: Template for Common Fields
+
+You can optionally provide a template to add missing common fields (like `repository`, `author`, `engines`):
+
+Create `.monosync/package-template.json`:
 
 ```json
 {
@@ -204,57 +119,16 @@ your-monorepo/
     "url": "https://github.com/yourorg/yourrepo.git"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.0.0"
   }
 }
 ```
 
-**Example `package-configs.json`:**
+Now `sync-packages` will:
+1. Reorder all fields
+2. Add missing common fields from the template (without overwriting existing values)
 
-```json
-{
-  "packages": {
-    "@yourscope/package-a": {
-      "directory": "packages/package-a",
-      "description": "Package A description",
-      "main": "./dist/index.js",
-      "module": "./dist/index.mjs",
-      "types": "./dist/index.d.ts",
-      "dependencies": {
-        "some-lib": "^1.0.0"
-      }
-    },
-    "@yourscope/package-b": {
-      "directory": "packages/package-b",
-      "description": "Package B description",
-      "main": "./dist/index.js",
-      "module": "./dist/index.mjs",
-      "types": "./dist/index.d.ts"
-    }
-  }
-}
-```
-
-### sync-versions
-
-Recursively finds all package.json files and synchronizes their versions.
-
-**What it does:**
-- Scans entire project for package.json files (excludes node_modules)
-- Reads version from root package.json
-- Updates all child package versions
-- Reports which packages changed and which stayed the same
-- Skips the root package.json itself
-
-**Usage:**
-
-```bash
-# Use root package.json version
-sync-versions
-
-# Use a specific version
-sync-versions --version 2.0.0
-```
+The template is **completely optional** - sync-packages works fine without it.
 
 ---
 
@@ -263,26 +137,18 @@ sync-versions --version 2.0.0
 ### sync-packages
 
 ```bash
-# Synchronize all packages (default location)
+# Auto-discover and reorder all package.json files
 sync-packages
 
-# Synchronize with custom config directory
-sync-packages --config-dir custom/path
-
-# Synchronize with custom files
-sync-packages --template custom/template.json --configs custom/configs.json
-
-# Validate structure without syncing
-sync-packages validate
+# Use a template for adding missing common fields
+sync-packages --template .monosync/package-template.json
 
 # Show help
 sync-packages --help
 ```
 
 **Options:**
-- `--template <path>` - Path to package-template.json
-- `--configs <path>` - Path to package-configs.json
-- `--config-dir <path>` - Directory containing both files
+- `--template <path>` - Path to package-template.json (optional)
 - `-h, --help` - Show help message
 - `-v, --version` - Show version number
 
@@ -303,21 +169,17 @@ sync-versions --help
 
 ## Programmatic Usage
 
-You can also use these tools as a library in your build scripts:
+Use as a library in your build scripts:
 
 ```typescript
 import { syncPackages, syncVersions } from '@codefocus/monosync';
 
-// Synchronize packages (uses default locations)
-const results = syncPackages(process.cwd(), {
-  validate: true,
-});
+// Reorder package.json fields (auto-discovers packages)
+const results = syncPackages(process.cwd());
 
-// Synchronize packages with custom paths
-const customResults = syncPackages(process.cwd(), {
-  validate: true,
-  templatePath: 'custom/template.json',
-  configsPath: 'custom/configs.json',
+// Reorder and add missing common fields from template
+const resultsWithTemplate = syncPackages(process.cwd(), {
+  templatePath: '.monosync/package-template.json',
 });
 
 // Synchronize versions
@@ -330,16 +192,12 @@ const versionResults = syncVersions(process.cwd(), {
 
 #### syncPackages(rootDir, options?)
 
-Synchronizes package.json files based on template and configs.
+Reorders package.json fields across your monorepo.
 
 **Parameters:**
 - `rootDir` (string) — Path to monorepo root
 - `options` (object, optional)
-  - `validate` (boolean) — Run validation before sync
-  - `verbose` (boolean) — Enable verbose logging
-  - `templatePath` (string) — Custom template path
-  - `configsPath` (string) — Custom configs path
-  - `configDir` (string) — Directory containing both files
+  - `templatePath` (string) — Path to template for adding missing common fields
 
 **Returns:** `SyncResult[]`
 
@@ -357,21 +215,16 @@ Synchronizes package versions across the monorepo.
 
 ---
 
-## How it Works
+## How It Works
 
 ### sync-packages
 
-1. **Resolve paths** — Checks CLI flags, .monosyncrc.json, then standard locations
-2. **Load template** — Reads shared configuration template
-3. **Load configs** — Reads per-package configurations
-4. **Validate** (optional) — Checks that all directories and required fields exist
-5. **Generate** — For each package:
-   - Starts with template as base
-   - Deep merges package-specific config
-   - Adds package name and version
-   - Orders fields properly
-6. **Write** — Writes formatted package.json to each package directory
-7. **Report** — Shows success/failure summary
+1. **Auto-discover** — Reads `pnpm-workspace.yaml` or scans `packages/`, `apps/`, `libs/` directories
+2. **Read** — Loads each package.json
+3. **Reorder** — Reorders fields to standard order
+4. **Add template fields** (optional) — Adds missing common fields from template if provided
+5. **Write** — Writes formatted package.json back to disk
+6. **Report** — Shows success/failure summary
 
 ### sync-versions
 
@@ -383,85 +236,29 @@ Synchronizes package versions across the monorepo.
 
 ---
 
-## Configuration Examples
-
-### Monorepo with shared dependencies
-
-```json
-{
-  "packages": {
-    "@myorg/core": {
-      "directory": "packages/core",
-      "description": "Core library",
-      "main": "./dist/index.js",
-      "types": "./dist/index.d.ts",
-      "dependencies": {
-        "some-lib": "^1.0.0"
-      }
-    },
-    "@myorg/utils": {
-      "directory": "packages/utils",
-      "description": "Utility functions",
-      "main": "./dist/index.js",
-      "types": "./dist/index.d.ts",
-      "dependencies": {
-        "@myorg/core": "workspace:*"
-      }
-    }
-  }
-}
-```
-
-### Private and public packages
-
-```json
-{
-  "packages": {
-    "@myorg/internal": {
-      "directory": "packages/internal",
-      "description": "Internal tooling",
-      "private": true,
-      "main": "./dist/index.js"
-    },
-    "@myorg/public": {
-      "directory": "packages/public",
-      "description": "Public API",
-      "main": "./dist/index.js",
-      "keywords": ["api", "public"]
-    }
-  }
-}
-```
-
-### Custom configuration locations
-
-**.monosyncrc.json:**
-```json
-{
-  "templatePath": "build-config/shared-template.json",
-  "configsPath": "build-config/package-overrides.json"
-}
-```
-
----
-
 ## Comparison with Alternatives
 
 ### Manual updates
 - ❌ Tedious and error-prone
 - ❌ Easy to miss packages
-- ❌ No validation
+- ❌ Inconsistent field ordering
+
+### Massive config files
+- ❌ Duplicate all package.json content
+- ❌ Maintain two sources of truth
+- ❌ Values get out of sync
 
 ### @codefocus/monosync
-- ✅ Automated and consistent
-- ✅ Template-based with per-package overrides
-- ✅ Built-in validation
+- ✅ Zero configuration required
+- ✅ Auto-discovers packages
+- ✅ Preserves all values
+- ✅ Only reorders fields for consistency
+- ✅ Optional template for missing fields
 - ✅ TypeScript support
-- ✅ Flexible configuration
 
 ### Workspace protocols (pnpm/yarn/npm)
 - These handle dependency management
-- monosync handles metadata and version synchronization
+- monosync handles consistency and version synchronization
 - Use both together for complete monorepo management
 
 ---
@@ -470,9 +267,9 @@ Synchronizes package versions across the monorepo.
 
 - Teams maintaining monorepos with multiple packages
 - Projects using pnpm/yarn/npm workspaces
-- Anyone needing consistent package.json metadata
+- Anyone wanting consistent package.json formatting
 - CI/CD pipelines that need synchronized versions
-- Projects that want flexible configuration without being opinionated
+- Projects that want automation without complex configuration
 
 ---
 
@@ -523,7 +320,22 @@ Contributions are welcome! Please:
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md) for release history.
+### v0.2.0
+
+**BREAKING CHANGES:**
+- Completely redesigned `sync-packages` to only reorder fields (no longer requires package-configs.json)
+- Auto-discovers packages from workspace configuration
+- Template is now optional and only adds missing common fields
+- Removed `validate` command and complex configuration options
+
+**Migration from v0.1.x:**
+- Remove `package-configs.json` (no longer needed)
+- Keep `package-template.json` if you want to add missing common fields (now optional)
+- Update scripts: `sync-packages` now auto-discovers packages
+
+### v0.1.0
+
+- Initial release with template-based package synchronization
 
 ---
 

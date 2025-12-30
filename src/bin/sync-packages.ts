@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import process from 'process';
 import fs from 'fs';
-import { syncPackages, validatePackageStructure } from '../lib/sync-packages.js';
+import { syncPackages } from '../lib/sync-packages.js';
 import type { SyncPackagesOptions } from '../lib/types.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -14,47 +14,40 @@ const ROOT_DIR = process.cwd();
 
 function printUsage(): void {
   console.log(`
-Usage: sync-packages [command] [options]
+Usage: sync-packages [options]
 
-Commands:
-  sync              Synchronize all package.json files (default)
-  validate          Validate package structure without syncing
+Description:
+  Reorders package.json fields across your monorepo to maintain consistency.
+  Automatically discovers packages from pnpm-workspace.yaml or scans common directories.
+  Optionally adds missing common fields from a template.
 
 Options:
-  --template <path>     Path to package-template.json
-  --configs <path>      Path to package-configs.json
-  --config-dir <path>   Directory containing both template and configs
+  --template <path>     Path to package-template.json (optional)
   -h, --help            Show this help message
   -v, --version         Show version number
 
-Configuration:
-  monosync looks for configuration files in the following locations (in order):
+How it works:
+  1. Auto-discovers all package.json files in your workspace
+  2. Reads each package.json preserving all values
+  3. Reorders fields to a standard order for consistency
+  4. Optionally adds missing common fields from template (repository, author, etc.)
+  5. Writes back with consistent formatting
 
-  1. Command-line flags (--template, --configs, or --config-dir)
-  2. .monosyncrc.json in project root
-  3. Standard locations:
-     - .monosync/package-template.json (recommended)
-     - .monosync/package-configs.json
-     - config/monosync/package-template.json
-     - config/monosync/package-configs.json
-     - package-template.json (root)
-     - package-configs.json (root)
+Template (optional):
+  If provided, the template adds missing common fields like repository, author, engines, etc.
+  The template does NOT override existing values - it only fills in missing fields.
 
-Example .monosyncrc.json:
-  {
-    "templatePath": ".monosync/package-template.json",
-    "configsPath": ".monosync/package-configs.json"
-  }
+  Standard template locations:
+    - .monosync/package-template.json (recommended)
+    - config/monosync/package-template.json
+    - package-template.json (root)
 
 Examples:
-  # Use default locations
+  # Reorder all package.json files
   sync-packages
 
-  # Specify config directory
-  sync-packages --config-dir .monosync
-
-  # Specify individual files
-  sync-packages --template custom/template.json --configs custom/configs.json
+  # Reorder and add missing fields from template
+  sync-packages --template .monosync/package-template.json
   `);
 }
 
@@ -68,12 +61,8 @@ function printVersion(): void {
   }
 }
 
-function parseArgs(args: string[]): {
-  command: string | undefined;
-  options: SyncPackagesOptions;
-} {
-  let command: string | undefined;
-  const options: SyncPackagesOptions = { validate: true };
+function parseArgs(args: string[]): SyncPackagesOptions {
+  const options: SyncPackagesOptions = {};
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -93,44 +82,16 @@ function parseArgs(args: string[]): {
       i++;
       continue;
     }
-
-    if (arg === '--configs' && args[i + 1]) {
-      options.configsPath = args[i + 1];
-      i++;
-      continue;
-    }
-
-    if (arg === '--config-dir' && args[i + 1]) {
-      options.configDir = args[i + 1];
-      i++;
-      continue;
-    }
-
-    if (!arg.startsWith('-') && !command) {
-      command = arg;
-    }
   }
 
-  return { command, options };
+  return options;
 }
 
 function main(): void {
   const args = process.argv.slice(2);
-  const { command, options } = parseArgs(args);
+  const options = parseArgs(args);
 
-  switch (command) {
-    case 'validate':
-      validatePackageStructure(ROOT_DIR, options);
-      break;
-    case 'sync':
-    case undefined:
-      syncPackages(ROOT_DIR, options);
-      break;
-    default:
-      console.error(`Unknown command: ${command}`);
-      printUsage();
-      process.exit(1);
-  }
+  syncPackages(ROOT_DIR, options);
 }
 
 main();
